@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+*.db
+*.sqlite
+events.json
+proposal_*.txt
+email_*.txt
+.env

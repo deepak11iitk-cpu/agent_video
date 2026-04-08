@@ -1,0 +1,119 @@
+# FlowTribes Scout - Configuration
+# Customize this for your brand and preferences
+
+profile:
+  brand_name: "FlowTribes"
+  instagram: "@flowtribes"
+  instructor_name: "Deepak"  # Update with your full name
+  email: ""                   # Add your contact email
+  phone: ""                   # Add your contact phone
+  website: ""                 # Add your website if any
+  location: "India"           # Update with your city
+  bio: >
+    FlowTribes is a movement community specializing in flow-based functional training.
+    We conduct workshops in Animal Flow, Row Flow, and Maze Flow — helping people
+    unlock their natural movement potential through ground-based, bodyweight training.
+
+movement_styles:
+  - name: "Animal Flow"
+    description: "Ground-based movement system using animal locomotion patterns"
+    keywords: ["animal flow", "quadrupedal movement", "ground movement", "primal movement"]
+
+  - name: "Row Flow"
+    description: "Flow-based rowing and pulling movement patterns for functional strength"
+    keywords: ["row flow", "functional rowing", "pull patterns", "flow training"]
+
+  - name: "Maze Flow"
+    description: "Complex multi-directional movement flow patterns"
+    keywords: ["maze flow", "movement maze", "directional flow", "complex movement"]
+
+# Event search configuration
+search:
+  # Regions to search for events
+  regions:
+    - "India"
+    - "Asia"
+    - "Global"
+
+  # Cities in India to prioritize
+  india_cities:
+    - "Mumbai"
+    - "Delhi"
+    - "Bangalore"
+    - "Pune"
+    - "Hyderabad"
+    - "Chennai"
+    - "Kolkata"
+    - "Goa"
+    - "Rishikesh"
+    - "Jaipur"
+
+  # Types of events to look for
+  event_types:
+    - "fitness festival"
+    - "movement workshop"
+    - "yoga festival"
+    - "functional fitness event"
+    - "wellness retreat"
+    - "fitness expo"
+    - "animal flow workshop"
+    - "calisthenics event"
+    - "bodyweight training event"
+    - "movement culture meetup"
+    - "parkour jam"
+    - "flow arts festival"
+
+  # Platforms to search
+  platforms:
+    - name: "Eventbrite"
+      base_url: "https://www.eventbrite.com/d/"
+    - name: "Insider.in"
+      base_url: "https://insider.in/"
+    - name: "BookMyShow"
+      base_url: "https://in.bookmyshow.com/"
+    - name: "Meetup"
+      base_url: "https://www.meetup.com/find/"
+    - name: "Animal Flow Official"
+      base_url: "https://animalflow.com/events/"
+
+# Workshop proposal defaults
+proposal:
+  workshop_types:
+    - name: "Intro to Animal Flow"
+      duration: "2 hours"
+      capacity: "20-30 participants"
+      level: "Beginner"
+      description: >
+        A hands-on introduction to Animal Flow — the ground-based movement system
+        that builds strength, mobility, and coordination using only your bodyweight.
+        Participants will learn fundamental movement patterns inspired by animal
+        locomotion and link them into flowing sequences.
+
+    - name: "Flow Fusion Workshop"
+      duration: "3 hours"
+      capacity: "15-25 participants"
+      level: "All Levels"
+      description: >
+        An immersive workshop combining Animal Flow, Row Flow, and Maze Flow.
+        Experience the full FlowTribes methodology — from ground-based movement
+        to complex multi-directional flow patterns. Suitable for movers of all
+        levels with progressions and regressions provided.
+
+    - name: "Advanced Flow Lab"
+      duration: "4 hours"
+      capacity: "10-15 participants"
+      level: "Intermediate-Advanced"
+      description: >
+        A deep-dive session for experienced movers. Explore advanced transitions,
+        creative flow building, and partner flow concepts. Participants should have
+        prior experience with Animal Flow or similar ground-based movement practices.
+
+    - name: "Corporate Wellness - Movement Break"
+      duration: "1 hour"
+      capacity: "20-50 participants"
+      level: "Beginner"
+      description: >
+        A refreshing movement session designed for corporate teams. Combining
+        simple flow patterns with mobility work, this session helps desk-bound
+        professionals reconnect with their bodies, reduce stress, and improve
+        posture and energy levels.
