@@ -560,7 +560,7 @@ async def _send_event_list(update, events, title):
 
 def main():
     """Start the bot."""
-    token = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+    token = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
 
     if not token:
         print("=" * 60)
