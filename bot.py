@@ -28,6 +28,12 @@ from event_scout import EventScout
 from tracker import EventTracker
 from proposal import ProposalGenerator
 
+try:
+    from agent import FlowTribesAgent
+    AI_AGENT_AVAILABLE = bool(os.environ.get("ANTHROPIC_API_KEY"))
+except ImportError:
+    AI_AGENT_AVAILABLE = False
+
 # ---------------------------------------------------------------------------
 # Logging
 # ---------------------------------------------------------------------------
@@ -43,6 +49,7 @@ logger = logging.getLogger(__name__)
 tracker = EventTracker()
 scout = EventScout()
 proposal_gen = ProposalGenerator()
+ai_agent = FlowTribesAgent() if AI_AGENT_AVAILABLE else None
 
 # Store the chat ID of the owner so we can send proactive messages
 OWNER_CHAT_ID = None
@@ -57,11 +64,21 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global OWNER_CHAT_ID
     OWNER_CHAT_ID = update.effective_chat.id
 
+    ai_note = (
+        "✨ *AI Agent mode is ON.* Just chat with me normally:\n"
+        "  • \"find yoga festivals in Bangalore\"\n"
+        "  • \"what's happening in Goa this year\"\n"
+        "  • \"draft a proposal for event #3\"\n\n"
+        if ai_agent else
+        "_(AI agent offline — set ANTHROPIC_API_KEY to enable smart search.)_\n\n"
+    )
+
     await update.message.reply_text(
         "Hey! I'm your *FlowTribes Scout* agent.\n\n"
         "I find movement & fitness events and help you apply for workshops.\n\n"
+        f"{ai_note}"
         "*Commands:*\n"
-        "/scout — Search for new events now\n"
+        "/scout — Quick scrape-based scout\n"
         "/events — List all tracked events\n"
         "/india — Show India events only\n"
         "/search `keyword` — Search events\n"
@@ -72,8 +89,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "/stats — Dashboard\n"
         "/workshops — Show workshop types\n"
         "/add — Add a custom event\n"
-        "/help — Show this message\n\n"
-        "I'll also *automatically scan* for new events daily and notify you!",
+        "/help — Show this message",
         parse_mode="Markdown",
     )
 
@@ -446,46 +462,33 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # ===========================================================================
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handle free-text messages with basic intent detection."""
-    text = update.message.text.lower().strip()
+    """Free-text messages go through the AI agent (Claude + web search)."""
+    text = update.message.text.strip()
 
-    if any(w in text for w in ["find event", "scout", "search event", "look for"]):
-        if any(w in text for w in ["india", "mumbai", "delhi", "bangalore", "pune", "goa"]):
-            await update.message.reply_text("Searching India events...")
-            await scout_cmd(update, context)
-        else:
-            await update.message.reply_text("Let me scout for events...")
-            await scout_cmd(update, context)
-
-    elif any(w in text for w in ["show event", "list event", "what event"]):
-        await events_cmd(update, context)
-
-    elif any(w in text for w in ["proposal", "propose", "apply", "application"]):
+    if ai_agent is None:
         await update.message.reply_text(
-            "To generate a proposal, use:\n/propose `event_id`\n\n"
-            "First run /events to see available events and their IDs."
+            "The AI agent is not configured. Set ANTHROPIC_API_KEY and restart.\n\n"
+            "Or use commands directly: /scout, /events, /stats, /help"
         )
+        return
 
-    elif any(w in text for w in ["stats", "dashboard", "summary", "how many"]):
-        await stats_cmd(update, context)
+    msg = await update.message.reply_text("🤔 Thinking & searching the web...")
 
-    elif any(w in text for w in ["help", "what can you do", "commands"]):
-        await start(update, context)
+    try:
+        import asyncio
+        response = await asyncio.to_thread(ai_agent.run, text)
+    except Exception as e:
+        logger.exception("Agent error")
+        await msg.edit_text(f"Agent error: {e}")
+        return
 
-    elif any(w in text for w in ["hi", "hello", "hey"]):
-        await update.message.reply_text(
-            "Hey Deepak! Ready to find some events?\n\n"
-            "Try /scout to discover new ones, or /events to see what's tracked."
-        )
-
+    # Telegram has a 4096 char limit
+    if len(response) <= 4000:
+        await msg.edit_text(response)
     else:
-        await update.message.reply_text(
-            "I'm not sure what you mean. Try:\n\n"
-            "- \"Find events in India\"\n"
-            "- \"Show my events\"\n"
-            "- \"Generate a proposal\"\n"
-            "- /help for all commands"
-        )
+        await msg.delete()
+        for chunk in _split_message(response):
+            await update.message.reply_text(chunk)
 
 
 # ===========================================================================
