@@ -30,9 +30,8 @@ from proposal import ProposalGenerator
 
 try:
     from agent import FlowTribesAgent
-    AI_AGENT_AVAILABLE = bool(os.environ.get("ANTHROPIC_API_KEY"))
 except ImportError:
-    AI_AGENT_AVAILABLE = False
+    FlowTribesAgent = None
 
 # ---------------------------------------------------------------------------
 # Logging
@@ -49,7 +48,13 @@ logger = logging.getLogger(__name__)
 tracker = EventTracker()
 scout = EventScout()
 proposal_gen = ProposalGenerator()
-ai_agent = FlowTribesAgent() if AI_AGENT_AVAILABLE else None
+
+if FlowTribesAgent:
+    ai_agent = FlowTribesAgent()
+    AI_AGENT_AVAILABLE = ai_agent.available
+else:
+    ai_agent = None
+    AI_AGENT_AVAILABLE = False
 
 # Store the chat ID of the owner so we can send proactive messages
 OWNER_CHAT_ID = None
@@ -64,14 +69,19 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global OWNER_CHAT_ID
     OWNER_CHAT_ID = update.effective_chat.id
 
-    ai_note = (
-        "✨ *AI Agent mode is ON.* Just chat with me normally:\n"
-        "  • \"find yoga festivals in Bangalore\"\n"
-        "  • \"what's happening in Goa this year\"\n"
-        "  • \"draft a proposal for event #3\"\n\n"
-        if ai_agent else
-        "_(AI agent offline — set ANTHROPIC_API_KEY to enable smart search.)_\n\n"
-    )
+    if ai_agent:
+        mode_label = "Claude CLI (Max subscription)" if ai_agent.mode == "cli" else "Anthropic API"
+        ai_note = (
+            f"✨ *AI Agent is ON* ({mode_label})\n"
+            "Just chat with me naturally:\n"
+            "  • \"find yoga festivals in Bangalore\"\n"
+            "  • \"what's happening in Goa this year\"\n"
+            "  • \"draft a proposal for event #3\"\n\n"
+        )
+    else:
+        ai_note = (
+            "_(AI agent offline — install Claude CLI or set ANTHROPIC\\_API\\_KEY)_\n\n"
+        )
 
     await update.message.reply_text(
         "Hey! I'm your *FlowTribes Scout* agent.\n\n"
@@ -89,6 +99,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "/stats — Dashboard\n"
         "/workshops — Show workshop types\n"
         "/add — Add a custom event\n"
+        "/mode — Check AI agent status\n"
         "/help — Show this message",
         parse_mode="Markdown",
     )
@@ -345,6 +356,35 @@ async def workshops_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(text, parse_mode="Markdown")
 
 
+async def mode_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Show AI agent status."""
+    if ai_agent and ai_agent.available:
+        if ai_agent.mode == "cli":
+            text = (
+                "*AI Agent: ON* (Claude CLI mode)\n\n"
+                "Using your Claude Max subscription — no API key needed.\n"
+                "Just chat naturally or use /scout, /propose, etc."
+            )
+        else:
+            text = (
+                "*AI Agent: ON* (API mode)\n\n"
+                "Using Anthropic API with web search + tools.\n"
+                "Full agent capabilities active."
+            )
+    else:
+        text = (
+            "*AI Agent: OFFLINE*\n\n"
+            "To enable, do ONE of these:\n\n"
+            "*Option 1 — Max subscription (no API key):*\n"
+            "`npm install -g @anthropic-ai/claude-code`\n"
+            "`claude login`\n\n"
+            "*Option 2 — API key:*\n"
+            "`export ANTHROPIC_API_KEY='sk-ant-...'`\n\n"
+            "Then restart the bot."
+        )
+    await update.message.reply_text(text, parse_mode="Markdown")
+
+
 async def add_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Add a custom event. Usage: /add Event Name | Date | Location | Country"""
     if not context.args:
@@ -467,8 +507,13 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if ai_agent is None:
         await update.message.reply_text(
-            "The AI agent is not configured. Set ANTHROPIC_API_KEY and restart.\n\n"
-            "Or use commands directly: /scout, /events, /stats, /help"
+            "AI agent is not configured.\n\n"
+            "Option 1 (Max subscription — no API key):\n"
+            "  npm install -g @anthropic-ai/claude-code\n"
+            "  claude login\n\n"
+            "Option 2 (API key):\n"
+            "  export ANTHROPIC_API_KEY='sk-ant-...'\n\n"
+            "Then restart the bot. Or use /scout, /events, /help"
         )
         return
 
@@ -583,7 +628,10 @@ def main():
         print("=" * 60)
         return
 
-    print("Starting FlowTribes Scout Telegram Agent...")
+    if ai_agent:
+        print(f"Starting FlowTribes Scout Telegram Agent (AI: {ai_agent.mode} mode)...")
+    else:
+        print("Starting FlowTribes Scout Telegram Agent (AI: offline)...")
 
     app = Application.builder().token(token).build()
 
@@ -601,6 +649,7 @@ def main():
     app.add_handler(CommandHandler("stats", stats_cmd))
     app.add_handler(CommandHandler("workshops", workshops_cmd))
     app.add_handler(CommandHandler("add", add_cmd))
+    app.add_handler(CommandHandler("mode", mode_cmd))
 
     # Inline button handler
     app.add_handler(CallbackQueryHandler(button_handler))
